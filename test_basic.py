@@ -53,11 +53,11 @@ def test_file_structure():
             print(f"✗ {file} missing")
             return False
     
-    for dir in required_dirs:
-        if os.path.isdir(dir):
-            print(f"✓ {dir}/ exists")
+    for directory in required_dirs:
+        if os.path.isdir(directory):
+            print(f"✓ {directory}/ exists")
         else:
-            print(f"✗ {dir}/ missing")
+            print(f"✗ {directory}/ missing")
             return False
     
     return True

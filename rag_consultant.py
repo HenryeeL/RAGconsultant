@@ -83,10 +83,17 @@ class RAGConsultant:
         
         Args:
             path: Path to load vector store from
+            
+        Note:
+            This method uses allow_dangerous_deserialization=True for FAISS loading.
+            Only load vector stores from trusted sources that you created yourself.
+            Do not load vector store files from untrusted or unknown sources.
         """
         if not os.path.exists(path):
             raise FileNotFoundError(f"Vector store not found: {path}")
         
+        # Note: allow_dangerous_deserialization is required for FAISS with pickle
+        # Only use vector stores that you created yourself from trusted documents
         self.vector_store = FAISS.load_local(
             path,
             self.embeddings,
