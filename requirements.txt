@@ -1,0 +1,6 @@
+langchain>=0.1.0
+langchain-community>=0.0.13
+openai>=1.0.0
+faiss-cpu>=1.7.4
+python-dotenv>=1.0.0
+tiktoken>=0.5.0

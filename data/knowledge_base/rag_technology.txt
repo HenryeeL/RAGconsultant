@@ -1,0 +1,23 @@
+RAG Technology Overview
+
+Retrieval-Augmented Generation (RAG) is a powerful AI technique that combines information retrieval with text generation. RAG systems work by:
+
+1. Retrieving relevant documents or passages from a knowledge base
+2. Using the retrieved information as context for a language model
+3. Generating responses based on both the retrieved context and the model's training
+
+Benefits of RAG:
+- Reduces hallucinations by grounding responses in factual documents
+- Enables up-to-date information without retraining the model
+- Provides transparency through source attribution
+- Cost-effective compared to fine-tuning large models
+
+Key Components:
+- Document Loader: Ingests and processes documents
+- Text Splitter: Breaks documents into manageable chunks
+- Embeddings: Converts text into numerical representations
+- Vector Store: Efficiently stores and retrieves embeddings
+- Language Model: Generates human-like responses
+- Retrieval Chain: Orchestrates the retrieval and generation process
+
+RAG is widely used in chatbots, question-answering systems, and knowledge management applications.
