@@ -187,6 +187,8 @@ def main():
             results.append((name, result))
         except Exception as e:
             print(f"\n✗ {name} test failed with exception: {e}")
+            import traceback
+            traceback.print_exc()
             results.append((name, False))
     
     print("\n" + "="*60)

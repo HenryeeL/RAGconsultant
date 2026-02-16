@@ -77,6 +77,7 @@ def test_config_class():
         "EMBEDDING_MODEL",
         "LLM_MODEL",
         "CHUNK_SIZE",
+        "CHUNK_OVERLAP",
         "TOP_K_RESULTS",
         "KNOWLEDGE_BASE_PATH",
         "VECTOR_STORE_PATH"
