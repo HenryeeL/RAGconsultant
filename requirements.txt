@@ -1,5 +1,5 @@
 langchain>=0.1.0
-langchain-community>=0.0.38
+langchain-community>=0.3.27
 openai>=1.0.0
 faiss-cpu>=1.7.4
 python-dotenv>=1.0.0
