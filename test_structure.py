@@ -69,8 +69,11 @@ def test_config_class():
     print("✓ Config class found")
     
     # Check for required attributes (assignments in class body)
-    assignments = [node.targets[0].id for node in ast.walk(config_class) 
-                  if isinstance(node, ast.Assign) and isinstance(node.targets[0], ast.Name)]
+    assignments = []
+    for node in ast.walk(config_class):
+        if isinstance(node, ast.Assign):
+            if node.targets and isinstance(node.targets[0], ast.Name):
+                assignments.append(node.targets[0].id)
     
     required_attrs = [
         "OPENAI_API_KEY",
