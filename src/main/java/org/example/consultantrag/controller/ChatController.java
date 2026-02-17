@@ -1,21 +1,21 @@
 package org.example.consultantrag.controller;
 
-import dev.langchain4j.model.chat.ChatLanguageModel;
+import org.example.consultantrag.service.ConsultantService;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.http.MediaType;
+import org.springframework.web.bind.annotation.*;
+import reactor.core.publisher.Flux;
 
 @RestController
+@RequestMapping("/api")
 public class ChatController {
 
     @Autowired
-    private ChatLanguageModel model; // 建议用通用接口
+    private ConsultantService consultantService;
 
-    // 显式指定 Get 请求，并给参数设置默认值防止 404/400
-    @RequestMapping("/chat")
-    public String chat(String message) {
-        return model.generate(message);
+    @PostMapping(value = "/chat", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
+    public Flux<String> chat(@RequestBody String message) {
+        System.out.println("接收到消息: " + message);
+        return consultantService.chat(message);
     }
 }

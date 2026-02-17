@@ -1,83 +1,101 @@
-<?xml version="1.0" encoding="UTF-8"?>
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+<!-- xml -->
+<!-- 文件: `pom.xml` -->
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <!-- POM 基本元数据 -->
     <modelVersion>4.0.0</modelVersion>
+
+    <!-- 使用 Spring Boot 的父 POM，管理依赖版本 -->
     <parent>
         <groupId>org.springframework.boot</groupId>
         <artifactId>spring-boot-starter-parent</artifactId>
         <version>3.5.10</version>
-        <relativePath/> <!-- lookup parent from repository -->
+        <relativePath/> <!-- 从仓库查找父 POM -->
     </parent>
+
+    <!-- 项目信息 -->
     <groupId>org.example</groupId>
     <artifactId>RAGconsultant</artifactId>
     <version>0.0.1-SNAPSHOT</version>
     <name>RAGconsultant</name>
     <description>RAGconsultant</description>
-    <url/>
-    <licenses>
-        <license/>
-    </licenses>
-    <developers>
-        <developer/>
-    </developers>
-    <scm>
-        <connection/>
-        <developerConnection/>
-        <tag/>
-        <url/>
-    </scm>
+
+    <!-- 编译参数（全项目共享） -->
     <properties>
+        <!-- Java 编译目标版本 -->
         <java.version>17</java.version>
     </properties>
+
+    <!-- 依赖声明 -->
     <dependencies>
+        <!-- Spring Web: 提供 Spring MVC / 嵌入式 Tomcat 等 -->
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-web</artifactId>
+            <!-- Starter 已由父 POM 管理版本，无需显式 version -->
         </dependency>
 
-        <!-- LangChain4j Spring Boot Starter -->
-        <!-- XML -->
+        <!-- LangChain4j Spring Boot starter：集成 langchain4j -->
         <dependency>
             <groupId>dev.langchain4j</groupId>
             <artifactId>langchain4j-spring-boot-starter</artifactId>
             <version>0.36.2</version>
         </dependency>
 
-        <!-- LangChain4j Ollama 集成 -->
+        <!-- Ollama 集成 -->
         <dependency>
             <groupId>dev.langchain4j</groupId>
             <artifactId>langchain4j-ollama-spring-boot-starter</artifactId>
             <version>0.36.2</version>
         </dependency>
 
-        <!-- 向量存储（选择其一，这里示例用内存） -->
+        <!-- Embeddings（示例使用 minilm） -->
         <dependency>
             <groupId>dev.langchain4j</groupId>
             <artifactId>langchain4j-embeddings-all-minilm-l6-v2</artifactId>
             <version>0.36.2</version>
         </dependency>
 
-        <!-- Lombok (可选，用于简化代码) -->
+        <!-- Reactor / 异步支持（langchain4j-reactor） -->
+        <dependency>
+            <groupId>dev.langchain4j</groupId>
+            <artifactId>langchain4j-reactor</artifactId>
+            <version>0.36.2</version>
+        </dependency>
+
+        <!-- WebFlux：如果使用响应式流式输出（streaming）则需要 -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-webflux</artifactId>
+        </dependency>
+
+        <!-- Lombok：可选，简化样板代码（IDE 需启用注解处理器） -->
         <dependency>
             <groupId>org.projectlombok</groupId>
             <artifactId>lombok</artifactId>
             <optional>true</optional>
         </dependency>
 
+        <!-- 测试依赖，仅在测试范围使用 -->
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-test</artifactId>
             <scope>test</scope>
         </dependency>
+
+
     </dependencies>
 
+    <!-- 构建配置 -->
     <build>
         <plugins>
+            <!-- Spring Boot Maven 插件：用于打包可执行 jar / 启动 -->
             <plugin>
                 <groupId>org.springframework.boot</groupId>
                 <artifactId>spring-boot-maven-plugin</artifactId>
             </plugin>
+            <!-- 如需自定义编译或资源过滤，可在这里添加 maven-compiler-plugin 等 -->
         </plugins>
     </build>
-
 </project>
