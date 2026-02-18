@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>AI 顾问 RAG 助手</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/marked/9.1.6/marked.min.js"></script>
     <style>
         * {
             transition: background-color 0.3s, color 0.3s, border-color 0.3s;
@@ -40,7 +41,6 @@
             color: #e0e0e0;
         }
 
-        /* 顶部栏 */
         .header {
             padding: 15px 20px;
             background: white;
@@ -86,7 +86,6 @@
             background: #444;
         }
 
-        /* 聊天记录区域 */
         #chat-history {
             flex: 1;
             overflow-y: auto;
@@ -99,7 +98,6 @@
             border-bottom-color: #444;
         }
 
-        /* 消息气泡样式 */
         .message {
             margin-bottom: 15px;
             display: flex;
@@ -147,6 +145,20 @@
             word-wrap: break-word;
         }
 
+        /* Markdown 渲染样式 */
+        .bubble p { margin: 0.3em 0; }
+        .bubble ul, .bubble ol { margin: 0.3em 0; padding-left: 1.5em; }
+        .bubble strong { font-weight: bold; }
+        .bubble code {
+            background: rgba(0,0,0,0.1);
+            padding: 2px 5px;
+            border-radius: 3px;
+            font-size: 0.9em;
+        }
+        body.dark-mode .bubble code {
+            background: rgba(255,255,255,0.1);
+        }
+
         .message.user .bubble {
             background-color: #007bff;
             color: white;
@@ -164,7 +176,6 @@
             color: #e0e0e0;
         }
 
-        /* 输入区域 */
         .input-area {
             padding: 20px;
             background: #fff;
@@ -221,7 +232,6 @@
             background-color: #555;
         }
 
-        /* 加载光标 */
         .cursor::after {
             content: '▋';
             animation: blink 1s infinite;
@@ -255,23 +265,19 @@
 </div>
 
 <script>
-    // 深色模式切换
-    const themeBtn = document.getElementById('theme-btn');
-    const htmlElement = document.documentElement;
+    const memoryId = Date.now().toString();
 
-    // 检查本地存储的主题设置，默认为深色
-    const savedTheme = localStorage.getItem('theme') || 'dark';
+    const themeBtn = document.getElementById('theme-btn');
+    const savedTheme = 'dark';
     if (savedTheme === 'dark') {
         document.body.classList.add('dark-mode');
         themeBtn.textContent = '☀️';
     }
 
-    // 切换深色模式
     themeBtn.addEventListener('click', () => {
         document.body.classList.toggle('dark-mode');
         const isDark = document.body.classList.contains('dark-mode');
         themeBtn.textContent = isDark ? '☀️' : '🌙';
-        localStorage.setItem('theme', isDark ? 'dark' : 'light');
     });
 
     async function sendMessage() {
@@ -282,55 +288,54 @@
 
         if (!message) return;
 
-        // 1. 禁用输入框，防止重复提交
         input.disabled = true;
         sendBtn.disabled = true;
 
-        // 2. 显示用户消息
         appendMessage('user', message);
         input.value = '';
 
-        // 3. 创建 AI 回复的占位气泡
         const aiBubble = appendMessage('ai', '');
-        aiBubble.classList.add('cursor'); // 添加光标闪烁效果
+        aiBubble.classList.add('cursor');
+
+        // ★ 用一个变量累积完整文本，用于 Markdown 渲染
+        let fullText = '';
 
         try {
-            // 4. 发起 POST 请求 (使用 fetch 处理流式响应)
-            const response = await fetch('/api/chat', {
+            const response = await fetch(`/api/chat?memoryId=${memoryId}`, {
                 method: 'POST',
-                headers: { 'Content-Type': 'text/plain' }, // 注意：你的后端接收的是 String，所以用 text/plain
+                headers: { 'Content-Type': 'text/plain' },
                 body: message
             });
 
             if (!response.ok) throw new Error('网络请求失败');
 
-            // 5. 处理 SSE 流 (Server-Sent Events)
-            const reader = response.body.getReader();
-            const decoder = new TextDecoder();
+            // ★ 用 fetch + getReader 读取 SSE 流
+            const reader = response.body
+                .pipeThrough(new TextDecoderStream())
+                .getReader();
+            let buffer = '';
 
             while (true) {
                 const { done, value } = await reader.read();
                 if (done) break;
 
-                // 1. 将数据块解码为字符串
-                const textChunk = decoder.decode(value, { stream: true });
+                buffer += value;
 
-                // 2. 按换行符分割，逐行处理 SSE 格式
-                const lines = textChunk.split('\n');
-                for (const line of lines) {
-                    // 3. 只要以 'data:' 开头的行
-                    if (line.startsWith('data:')) {
-                        // 截掉前 5 个字符 ('data:')，提取真正的内容
-                        let actualText = line.substring(5);
+                // 按双换行分割 SSE 事件，最后一段可能不完整
+                const parts = buffer.split('\n\n');
+                buffer = parts.pop();
 
-                        // 只添加非空数据
-                        if (actualText.trim()) {
-                            aiBubble.innerText += actualText;
+                for (const part of parts) {
+                    for (const line of part.split('\n')) {
+                        if (line.startsWith('data:')) {
+                            let actualText = line.substring(5);
+                            if (actualText) {
+                                fullText += actualText;
+                                aiBubble.innerHTML = marked.parse(fullText);
+                            }
                         }
                     }
                 }
-
-                // 滚动到底部
                 chatHistory.scrollTop = chatHistory.scrollHeight;
             }
 
@@ -339,21 +344,18 @@
             aiBubble.innerText += "\n[出错了，请稍后再试]";
             aiBubble.style.color = "red";
         } finally {
-            // 6. 恢复输入状态
-            aiBubble.classList.remove('cursor'); // 移除光标
+            aiBubble.classList.remove('cursor');
             input.disabled = false;
             sendBtn.disabled = false;
             input.focus();
         }
     }
 
-    // 辅助函数：添加消息到界面
     function appendMessage(role, text) {
         const history = document.getElementById('chat-history');
         const msgDiv = document.createElement('div');
         msgDiv.className = `message ${role}`;
 
-        // 添加头像
         const avatar = document.createElement('div');
         avatar.className = 'avatar';
         avatar.textContent = role === 'user' ? '👤' : '🤖';
@@ -362,7 +364,6 @@
         bubble.className = 'bubble';
         bubble.innerText = text;
 
-        // 用户消息：气泡在前，头像在后（这样渲染时气泡在左，头像在右）
         if (role === 'user') {
             msgDiv.appendChild(bubble);
             msgDiv.appendChild(avatar);
@@ -373,8 +374,7 @@
 
         history.appendChild(msgDiv);
         history.scrollTop = history.scrollHeight;
-
-        return bubble; // 返回气泡元素以便后续追加文字
+        return bubble;
     }
 </script>
 
