@@ -6,351 +6,223 @@
     <title>AI 顾问 RAG 助手</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/marked/9.1.6/marked.min.js"></script>
     <style>
-        * {
-            transition: background-color 0.3s, color 0.3s, border-color 0.3s;
+        :root {
+            --primary-color: #007bff;
+            --bg-color: #f4f4f9;
+            --chat-bg: #fff;
+            --text-color: #333;
+            --border-color: #eee;
+        }
+
+        body.dark-mode {
+            --primary-color: #4a9eff;
+            --bg-color: #1a1a1a;
+            --chat-bg: #2d2d2d;
+            --text-color: #e0e0e0;
+            --border-color: #444;
         }
 
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background-color: #f4f4f9;
+            background-color: var(--bg-color);
+            color: var(--text-color);
             display: flex;
             justify-content: center;
             height: 100vh;
             margin: 0;
-        }
-
-        body.dark-mode {
-            background-color: #1a1a1a;
+            transition: all 0.3s;
         }
 
         .chat-container {
             width: 100%;
-            max-width: 800px;
-            background: white;
-            box-shadow: 0 0 10px rgba(0,0,0,0.1);
+            max-width: 1200px;
+            background: var(--chat-bg);
+            box-shadow: 0 0 15px rgba(0, 0, 0, 0.1);
             display: flex;
             flex-direction: column;
-            height: 90vh;
+            height: 95vh;
             margin-top: 20px;
-            border-radius: 8px;
+            border-radius: 12px;
             overflow: hidden;
-        }
-
-        body.dark-mode .chat-container {
-            background: #2d2d2d;
-            color: #e0e0e0;
         }
 
         .header {
             padding: 15px 20px;
-            background: white;
-            border-bottom: 1px solid #eee;
+            border-bottom: 1px solid var(--border-color);
             display: flex;
-            justify-content: center;
+            justify-content: space-between;
             align-items: center;
-            position: relative;
         }
 
-        body.dark-mode .header {
-            background: #1f1f1f;
-            border-bottom-color: #444;
-        }
+        .header h1 { margin: 0; font-size: 20px; }
 
-        .header h1 {
-            margin: 0;
-            font-size: 20px;
-            color: #333;
-        }
-
-        body.dark-mode .header h1 {
-            color: #e0e0e0;
-        }
-
-        .theme-toggle {
+        .tab-btn {
             background: none;
-            border: none;
-            font-size: 20px;
+            border: 2px solid var(--primary-color);
+            color: var(--primary-color);
+            padding: 6px 16px;
+            border-radius: 20px;
             cursor: pointer;
-            padding: 5px 10px;
-            border-radius: 5px;
-            transition: background 0.3s;
-            position: absolute;
-            right: 20px;
+            font-weight: 600;
+            margin-right: 10px;
         }
 
-        .theme-toggle:hover {
-            background: #f0f0f0;
-        }
+        .tab-btn.active { background: var(--primary-color); color: white; }
 
-        body.dark-mode .theme-toggle:hover {
-            background: #444;
-        }
+        .content-wrapper { flex: 1; display: flex; overflow: hidden; position: relative; }
 
-        #chat-history {
-            flex: 1;
-            overflow-y: auto;
-            padding: 20px;
-            border-bottom: 1px solid #eee;
-            scroll-behavior: smooth;
-        }
+        .tab-content { width: 100%; height: 100%; display: none; flex-direction: column; }
+        .tab-content.active { display: flex; }
 
-        body.dark-mode #chat-history {
-            border-bottom-color: #444;
-        }
+        #chat-history { flex: 1; overflow-y: auto; padding: 20px; scroll-behavior: smooth; }
 
-        .message {
-            margin-bottom: 15px;
-            display: flex;
-            align-items: flex-start;
-            gap: 10px;
-        }
-
-        .message.user {
-            justify-content: flex-end;
-            flex-direction: row;
-        }
-
-        .message.ai {
-            justify-content: flex-start;
-        }
+        /* 消息容器布局 */
+        .message { margin-bottom: 20px; display: flex; gap: 12px; align-items: flex-start; }
+        .message.user { justify-content: flex-end; }
+        .message.ai { justify-content: flex-start; }
 
         .avatar {
-            width: 36px;
-            height: 36px;
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 20px;
-            flex-shrink: 0;
+            width: 40px; height: 40px; border-radius: 50%;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 20px; flex-shrink: 0;
         }
 
-        .message.user .avatar {
-            background: linear-gradient(135deg, #007bff, #0056b3);
-        }
+        .message.user .avatar { background: var(--primary-color); color: white; }
+        .message.ai .avatar { background: #6c757d; color: white; }
 
-        .message.ai .avatar {
-            background: linear-gradient(135deg, #6c757d, #495057);
-        }
+        .bubble { max-width: 70%; padding: 12px 16px; border-radius: 12px; line-height: 1.5; }
+        .message.user .bubble { background: var(--primary-color); color: white; border-top-right-radius: 2px; }
+        .message.ai .bubble { background: #f1f0f0; color: #333; border-top-left-radius: 2px; }
+        body.dark-mode .message.ai .bubble { background: #3f3f3f; color: #e0e0e0; }
 
-        body.dark-mode .message.ai .avatar {
-            background: linear-gradient(135deg, #555, #777);
-        }
+        .input-area { padding: 20px; border-top: 1px solid var(--border-color); display: flex; gap: 10px; }
+        input[type="text"] { flex: 1; padding: 12px; border-radius: 24px; border: 1px solid var(--border-color); background: var(--bg-color); color: var(--text-color); outline: none; }
+        button { padding: 10px 24px; background: var(--primary-color); color: white; border: none; border-radius: 24px; cursor: pointer; font-weight: bold; }
+        button:disabled { opacity: 0.6; cursor: not-allowed; }
 
-        .bubble {
-            padding: 10px 15px;
-            border-radius: 15px;
-            max-width: 70%;
-            line-height: 1.5;
-            word-wrap: break-word;
-        }
+        .rag-container { padding: 30px; overflow-y: auto; display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+        .rag-panel { background: var(--bg-color); padding: 20px; border-radius: 12px; border: 1px solid var(--border-color); }
+        .rag-panel h3 { margin-top: 0; color: var(--primary-color); }
 
-        /* Markdown 渲染样式 */
-        .bubble p { margin: 0.3em 0; }
-        .bubble ul, .bubble ol { margin: 0.3em 0; padding-left: 1.5em; }
-        .bubble strong { font-weight: bold; }
-        .bubble code {
-            background: rgba(0,0,0,0.1);
-            padding: 2px 5px;
-            border-radius: 3px;
-            font-size: 0.9em;
-        }
-        body.dark-mode .bubble code {
-            background: rgba(255,255,255,0.1);
-        }
+        .upload-zone { border: 2px dashed var(--border-color); border-radius: 8px; padding: 30px; text-align: center; cursor: pointer; transition: all 0.3s; }
+        .upload-zone:hover, .upload-zone.dragover { border-color: var(--primary-color); background: rgba(0, 123, 255, 0.05); }
+        .file-input { display: none; }
 
-        .message.user .bubble {
-            background-color: #007bff;
-            color: white;
-            border-bottom-right-radius: 2px;
-        }
+        .rag-response { margin-top: 15px; padding: 10px; border-radius: 6px; font-size: 14px; display: none; }
+        .rag-response.success { background: #d4edda; color: #155724; display: block; }
+        .rag-response.error { background: #f8d7da; color: #721c24; display: block; }
 
-        .message.ai .bubble {
-            background-color: #f1f0f0;
-            color: #333;
-            border-bottom-left-radius: 2px;
-        }
-
-        body.dark-mode .message.ai .bubble {
-            background-color: #3f3f3f;
-            color: #e0e0e0;
-        }
-
-        .input-area {
-            padding: 20px;
-            background: #fff;
-            display: flex;
-            gap: 10px;
-        }
-
-        body.dark-mode .input-area {
-            background: #2d2d2d;
-            border-top: 1px solid #444;
-        }
-
-        input[type="text"] {
-            flex: 1;
-            padding: 12px;
-            border: 1px solid #ddd;
-            border-radius: 20px;
-            outline: none;
-            background: white;
-            color: #333;
-        }
-
-        body.dark-mode input[type="text"] {
-            background: #3f3f3f;
-            color: #e0e0e0;
-            border-color: #555;
-        }
-
-        input[type="text"]:focus {
-            border-color: #007bff;
-        }
-
-        button {
-            padding: 10px 25px;
-            background-color: #007bff;
-            color: white;
-            border: none;
-            border-radius: 20px;
-            cursor: pointer;
-            font-weight: bold;
-            transition: background 0.3s;
-        }
-
-        button:hover {
-            background-color: #0056b3;
-        }
-
-        button:disabled {
-            background-color: #ccc;
-            cursor: not-allowed;
-        }
-
-        body.dark-mode button:disabled {
-            background-color: #555;
-        }
-
-        .cursor::after {
-            content: '▋';
-            animation: blink 1s infinite;
-            color: #007bff;
-        }
-
-        @keyframes blink {
-            50% { opacity: 0; }
-        }
+        .bubble p { margin: 5px 0; }
+        .bubble pre { background: rgba(0,0,0,0.1); padding: 10px; border-radius: 5px; overflow-x: auto; }
+        .cursor::after { content: '▋'; animation: blink 1s infinite; }
+        @keyframes blink { 50% { opacity: 0; } }
     </style>
 </head>
 <body>
 
 <div class="chat-container">
     <div class="header">
-        <h1>AI 顾问 RAG 助手</h1>
-        <button class="theme-toggle" id="theme-btn" title="切换深色模式">🌙</button>
-    </div>
-
-    <div id="chat-history">
-        <div class="message ai">
-            <div class="avatar">🤖</div>
-            <div class="bubble">你好！我是你的 AI 顾问。有什么可以帮你的吗？</div>
+        <h1>🧠 AI 顾问 (RAG 增强版)</h1>
+        <div>
+            <button class="tab-btn active" onclick="switchTab('chat')">💬 对话</button>
+            <button class="tab-btn" onclick="switchTab('rag')">📂 知识库管理</button>
+            <button class="tab-btn" onclick="toggleTheme()">🌓</button>
         </div>
     </div>
 
-    <div class="input-area">
-        <input type="text" id="user-input" placeholder="输入你的问题..." onkeydown="if(event.key==='Enter') sendMessage()">
-        <button onclick="sendMessage()" id="send-btn">发送</button>
+    <div class="content-wrapper">
+        <div id="chat-tab" class="tab-content active">
+            <div id="chat-history"></div>
+            <div class="input-area">
+                <input type="text" id="user-input" placeholder="输入问题..." onkeydown="if(event.key==='Enter') sendMessage()">
+                <button onclick="sendMessage()" id="send-btn">发送</button>
+            </div>
+        </div>
+
+        <div id="rag-tab" class="tab-content">
+            <div class="rag-container">
+                <div class="rag-panel" style="grid-column: 1 / -1;">
+                    <h3>📤 上传知识库文档</h3>
+                    <div class="upload-zone" id="dropZone" onclick="document.getElementById('fileInput').click()">
+                        <p>📄 点击或拖拽 PDF / Word / TXT 文件到此处</p>
+                        <input type="file" id="fileInput" class="file-input" onchange="handleFileUpload(this.files[0])">
+                    </div>
+                    <div id="uploadStatus" class="rag-response"></div>
+                </div>
+
+                <div class="rag-panel" style="grid-column: 1 / -1;">
+                    <h3>🔍 知识库检索测试</h3>
+                    <div style="display: flex; gap: 10px;">
+                        <input type="text" id="searchQuery" placeholder="输入关键词测试检索效果..." style="flex:1;">
+                        <button onclick="searchDocuments()">搜索</button>
+                    </div>
+                    <ul id="searchResults" style="margin-top: 15px; padding-left: 20px;"></ul>
+                </div>
+            </div>
+        </div>
     </div>
 </div>
 
 <script>
-    const memoryId = Date.now().toString();
+    const memoryId = "user_" + Date.now();
 
-    const themeBtn = document.getElementById('theme-btn');
-    const savedTheme = 'dark';
-    if (savedTheme === 'dark') {
-        document.body.classList.add('dark-mode');
-        themeBtn.textContent = '☀️';
+    // 初始化欢迎语
+    window.onload = () => {
+        appendMessage('ai', '你好！我是你的面试顾问。请先在“知识库管理”中上传你的简历或面试资料(PDF)，然后我们可以开始模拟面试或解答问题。');
+    };
+
+    function switchTab(tab) {
+        document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
+        document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active'));
+        document.getElementById(tab + '-tab').classList.add('active');
+        event.currentTarget.classList.add('active');
     }
 
-    themeBtn.addEventListener('click', () => {
-        document.body.classList.toggle('dark-mode');
-        const isDark = document.body.classList.contains('dark-mode');
-        themeBtn.textContent = isDark ? '☀️' : '🌙';
-    });
+    function toggleTheme() { document.body.classList.toggle('dark-mode'); }
 
     async function sendMessage() {
         const input = document.getElementById('user-input');
-        const sendBtn = document.getElementById('send-btn');
-        const chatHistory = document.getElementById('chat-history');
-        const message = input.value.trim();
+        const msg = input.value.trim();
+        if (!msg) return;
 
-        if (!message) return;
-
-        input.disabled = true;
-        sendBtn.disabled = true;
-
-        appendMessage('user', message);
+        appendMessage('user', msg);
         input.value = '';
+        input.disabled = true;
 
-        const aiBubble = appendMessage('ai', '');
+        const aiBubble = appendMessage('ai', 'Thinking...');
         aiBubble.classList.add('cursor');
-
-        // ★ 用一个变量累积完整文本，用于 Markdown 渲染
-        let fullText = '';
+        let fullText = "";
 
         try {
             const response = await fetch(`/api/chat?memoryId=${memoryId}`, {
                 method: 'POST',
-                headers: { 'Content-Type': 'text/plain' },
-                body: message
+                headers: { 'Content-Type': 'text/plain;charset=UTF-8' },
+                body: msg
             });
 
-            if (!response.ok) throw new Error('网络请求失败');
+            if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
 
-            // ★ 用 fetch + getReader 读取 SSE 流
-            const reader = response.body
-                .pipeThrough(new TextDecoderStream())
-                .getReader();
-            let buffer = '';
+            const reader = response.body.getReader();
+            const decoder = new TextDecoder();
+            aiBubble.innerHTML = "";
 
             while (true) {
                 const { done, value } = await reader.read();
                 if (done) break;
-
-                buffer += value;
-
-                // 按双换行分割 SSE 事件，最后一段可能不完整
-                const parts = buffer.split('\n\n');
-                buffer = parts.pop();
-
-                for (const part of parts) {
-                    for (const line of part.split('\n')) {
-                        if (line.startsWith('data:')) {
-                            let actualText = line.substring(5);
-                            if (actualText) {
-                                fullText += actualText;
-                                aiBubble.innerHTML = marked.parse(fullText);
-                            }
-                        }
-                    }
-                }
-                chatHistory.scrollTop = chatHistory.scrollHeight;
+                fullText += decoder.decode(value, { stream: true });
+                aiBubble.innerHTML = marked.parse(fullText);
+                document.getElementById('chat-history').scrollTop = document.getElementById('chat-history').scrollHeight;
             }
-
-        } catch (error) {
-            console.error('Error:', error);
-            aiBubble.innerText += "\n[出错了，请稍后再试]";
-            aiBubble.style.color = "red";
+        } catch (e) {
+            aiBubble.innerHTML = `<span style='color:red'>[发送失败: ${e.message}]</span>`;
         } finally {
             aiBubble.classList.remove('cursor');
             input.disabled = false;
-            sendBtn.disabled = false;
             input.focus();
         }
     }
 
+    // ✅ 修复后的 appendMessage 函数
     function appendMessage(role, text) {
         const history = document.getElementById('chat-history');
         const msgDiv = document.createElement('div');
@@ -362,21 +234,65 @@
 
         const bubble = document.createElement('div');
         bubble.className = 'bubble';
-        bubble.innerText = text;
+        bubble.innerHTML = marked.parse(text);
 
         if (role === 'user') {
-            msgDiv.appendChild(bubble);
-            msgDiv.appendChild(avatar);
+            msgDiv.appendChild(bubble); // 用户：气泡在左
+            msgDiv.appendChild(avatar); // 用户：头像在右
         } else {
-            msgDiv.appendChild(avatar);
-            msgDiv.appendChild(bubble);
+            msgDiv.appendChild(avatar); // AI：头像在左
+            msgDiv.appendChild(bubble); // AI：气泡在右
         }
 
         history.appendChild(msgDiv);
         history.scrollTop = history.scrollHeight;
         return bubble;
     }
-</script>
 
+    async function handleFileUpload(file) {
+        if (!file) return;
+        const statusDiv = document.getElementById('uploadStatus');
+        statusDiv.className = 'rag-response';
+        statusDiv.style.display = 'block';
+        statusDiv.innerText = `⏳ 正在处理 ${file.name} ...`;
+
+        const formData = new FormData();
+        formData.append('file', file);
+
+        try {
+            const res = await fetch('/api/rag/upload', { method: 'POST', body: formData });
+            const data = await res.json();
+            if (data.success) {
+                statusDiv.className = 'rag-response success';
+                statusDiv.innerText = `✅ 成功! 解析为 ${data.segmentsAdded} 个片段。`;
+            } else throw new Error(data.message);
+        } catch (e) {
+            statusDiv.className = 'rag-response error';
+            statusDiv.innerText = `❌ 失败: ${e.message}`;
+        }
+    }
+
+    const dropZone = document.getElementById('dropZone');
+    dropZone.addEventListener('dragover', (e) => { e.preventDefault(); dropZone.classList.add('dragover'); });
+    dropZone.addEventListener('dragleave', () => dropZone.classList.remove('dragover'));
+    dropZone.addEventListener('drop', (e) => {
+        e.preventDefault();
+        dropZone.classList.remove('dragover');
+        handleFileUpload(e.dataTransfer.files[0]);
+    });
+
+    async function searchDocuments() {
+        const query = document.getElementById('searchQuery').value;
+        if (!query) return;
+        const res = await fetch('/api/rag/search', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ query: query, maxResults: 3 })
+        });
+        const data = await res.json();
+        const list = document.getElementById('searchResults');
+        list.innerHTML = data.results?.length ? data.results.map(t => `<li style="background:#f8f9fa;padding:8px;margin-bottom:8px;border-radius:4px;">${t.substring(0, 150)}...</li>`).join('') : '<li>未找到内容</li>';
+    }
+</script>
 </body>
 </html>

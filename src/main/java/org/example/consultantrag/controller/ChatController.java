@@ -1,8 +1,6 @@
 package org.example.consultantrag.controller;
 
 import org.example.consultantrag.service.ConsultantService;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.*;
 import reactor.core.publisher.Flux;
 
@@ -10,12 +8,15 @@ import reactor.core.publisher.Flux;
 @RequestMapping("/api")
 public class ChatController {
 
-    @Autowired
-    private ConsultantService consultantService;
+    private final ConsultantService consultantService;
 
-    @PostMapping(value = "/chat", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
-    public Flux<String> chat(@RequestBody String message,@RequestParam String memoryId) {
-        System.out.println(" message: [" + message + "]" + "memoryId: " + memoryId);
+    public ChatController(ConsultantService consultantService) {
+        this.consultantService = consultantService;
+    }
+
+    // 前端 fetch 用的是 POST，这里必须是 PostMapping
+    @PostMapping("/chat")
+    public Flux<String> chat(@RequestParam String memoryId, @RequestBody String message) {
         return consultantService.chat(memoryId, message);
     }
 }

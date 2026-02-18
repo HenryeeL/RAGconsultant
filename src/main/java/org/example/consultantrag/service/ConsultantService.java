@@ -11,16 +11,18 @@ import reactor.core.publisher.Flux;
         wiringMode = AiServiceWiringMode.EXPLICIT,
         chatModel = "ollamaChatModel",
         streamingChatModel = "ollamaStreamingChatModel",
-        chatMemoryProvider = "chatMemoryProvider"
+        chatMemoryProvider = "chatMemoryProvider",
+        contentRetriever = "contentRetriever"
         //chatMemory = "chatMemory"
 )
 public interface ConsultantService {
 
     /**
      * 发送消息并获取流式回复
+     *
      * @param message 用户消息
      * @return 响应式流（逐 token 返回）
      */
-    @SystemMessage("你的名字是kk")
+    @SystemMessage(fromResource = "system.txt")
     Flux<String> chat(@MemoryId String memoryId, @UserMessage String message);
 }
