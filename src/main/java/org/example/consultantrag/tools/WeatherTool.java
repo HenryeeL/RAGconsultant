@@ -2,6 +2,7 @@ package org.example.consultantrag.tools;
 
 import dev.langchain4j.agent.tool.P;
 import dev.langchain4j.agent.tool.Tool;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestTemplate;
 import org.springframework.web.util.UriComponentsBuilder;
@@ -16,7 +17,10 @@ import java.util.Map;
 @Component("weatherTool")
 public class WeatherTool {
 
-    private final String API_KEY = "3dbdd483e9ba7d4f12423c580bcee0a5";
+    // 从配置文件中动态注入 API Key，确保本地私密性
+    @Value("${weather.api.key}")
+    private String apiKey;
+
     private final RestTemplate restTemplate = new RestTemplate();
 
     @Tool("查询指定城市的实时天气信息")
@@ -26,7 +30,7 @@ public class WeatherTool {
             String geoUrl = UriComponentsBuilder.fromHttpUrl("http://api.openweathermap.org/geo/1.0/direct")
                     .queryParam("q", city)
                     .queryParam("limit", 1)
-                    .queryParam("appid", API_KEY)
+                    .queryParam("appid", apiKey) // 使用注入的变量
                     .build().toUriString();
 
             List<Map<String, Object>> geoLocations = restTemplate.getForObject(geoUrl, List.class);
@@ -38,32 +42,32 @@ public class WeatherTool {
             double lat = (double) location.get("lat");
             double lon = (double) location.get("lon");
 
-            // 2. 调用 One Call 3.0 接口
+            // 2. 调用 One Call 3.0 接口获取实时气象数据
             long currentTimestamp = Instant.now().getEpochSecond();
 
             String weatherUrl = UriComponentsBuilder.fromHttpUrl("https://api.openweathermap.org/data/3.0/onecall/timemachine")
                     .queryParam("lat", lat)
                     .queryParam("lon", lon)
                     .queryParam("dt", currentTimestamp)
-                    .queryParam("appid", API_KEY)
+                    .queryParam("appid", apiKey) // 使用注入的变量
                     .queryParam("units", "metric")
                     .queryParam("lang", "zh_cn")
                     .build().toUriString();
 
             Map<String, Object> response = restTemplate.getForObject(weatherUrl, Map.class);
 
-            // --- 核心修改：推算当地时间 ---
-            // 获取时区偏移量（秒）
+            // --- 核心逻辑：基于时区偏移量计算当地时间 ---
+            // 解决服务器系统时间与目的地物理位置的时间对齐痛点
             int offsetInSeconds = ((Number) response.get("timezone_offset")).intValue();
 
-            // 计算当地时间
+            // 计算当地精确时间
             ZoneOffset zoneOffset = ZoneOffset.ofTotalSeconds(offsetInSeconds);
             OffsetDateTime localTime = Instant.now().atOffset(zoneOffset);
 
-            // 格式化时间，包含星期几，方便 AI 判断工作日
+            // 格式化时间，包含星期信息，辅助 AI 进行日期感知型建议
             String formattedLocalTime = localTime.format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm (EEEE)"));
 
-            // 3. 解析天气数据
+            // 3. 解析并返回结构化天气数据
             List<Map<String, Object>> dataList = (List<Map<String, Object>>) response.get("data");
             Map<String, Object> weatherData = dataList.get(0);
             List<Map<String, Object>> weatherDesc = (List<Map<String, Object>>) weatherData.get("weather");

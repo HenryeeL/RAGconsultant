@@ -2,8 +2,11 @@ spring:
   application:
     name: consultantRAG
 
+  # 👇【新增】激活本地私密配置，Spring 会自动加载 application-local.yml
+  profiles:
+    active: local
+
   # 👇【关键配置】允许 CommonConfig 里的 Bean 覆盖官方默认 Bean
-  # 如果不加这一行，启动时会报 "BeanDefinitionOverrideException"
   main:
     allow-bean-definition-overriding: true
 
@@ -12,7 +15,6 @@ spring:
     redis:
       host: localhost
       port: 6379
-      # password: your_password # 如果没有密码这行注释掉
 
 # ==========================================
 # Ollama 自定义配置
