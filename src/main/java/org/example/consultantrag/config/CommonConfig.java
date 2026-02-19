@@ -61,6 +61,8 @@ public class CommonConfig {
         return OllamaChatModel.builder()
                 .baseUrl(ollamaBaseUrl)
                 .modelName(chatModelName)
+                .logRequests(true)  // 开启请求日志
+                .logResponses(true) // 开启响应日志
                 .timeout(Duration.ofSeconds(60))
                 .build();
     }
@@ -70,6 +72,8 @@ public class CommonConfig {
         return OllamaStreamingChatModel.builder()
                 .baseUrl(ollamaBaseUrl)
                 .modelName(chatModelName)
+                .logRequests(true)  // 开启请求日志
+                .logResponses(true) // 开启响应日志
                 .timeout(Duration.ofSeconds(60))
                 .build();
     }

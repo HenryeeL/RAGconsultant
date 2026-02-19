@@ -41,3 +41,12 @@ qdrant:
   # nomic-embed-text = 768
   # 如果以后换模型，记得改这里，Java 代码会自动读取这个值来建表
   vector-dimension: 4096
+
+logging:
+  level:
+    # 核心：开启 LangChain4j 的调试日志，能看到工具调用的 JSON 封包
+    dev.langchain4j: DEBUG
+    # 推荐：开启你项目自身的日志，看到你写的 System.out.println 或 log.info
+    org.example.consultantrag: DEBUG
+    # 可选：如果你想看 Spring 如何注入这些 Tool Bean
+    org.springframework.beans: INFO
