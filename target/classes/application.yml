@@ -1,0 +1,52 @@
+spring:
+  application:
+    name: consultantRAG
+
+  # 👇【关键配置】允许 CommonConfig 里的 Bean 覆盖官方默认 Bean
+  # 如果不加这一行，启动时会报 "BeanDefinitionOverrideException"
+  main:
+    allow-bean-definition-overriding: true
+
+  # Redis 连接配置
+  data:
+    redis:
+      host: localhost
+      port: 6379
+      # password: your_password # 如果没有密码这行注释掉
+
+# ==========================================
+# Ollama 自定义配置
+# 对应 CommonConfig 中的 @Value("${ollama...}")
+# ==========================================
+ollama:
+  base-url: http://localhost:11434
+
+  chat-model:
+    name: qwen3:4b             # ⚠️ 请确保你在终端用 `ollama list` 能看到这个名字
+
+  embedding-model:
+    name: qwen3-embedding   # 用于生成向量的模型
+
+# ==========================================
+# Qdrant 自定义配置
+# 对应 CommonConfig 中的 @Value("${qdrant...}")
+# ==========================================
+qdrant:
+  host: localhost
+  port: 6334
+  collection-name: consultant_knowledge
+
+  # 👇【关键配置】向量维度
+  # qwen3-embedding = 4096
+  # nomic-embed-text = 768
+  # 如果以后换模型，记得改这里，Java 代码会自动读取这个值来建表
+  vector-dimension: 4096
+
+logging:
+  level:
+    # 核心：开启 LangChain4j 的调试日志，能看到工具调用的 JSON 封包
+    dev.langchain4j: DEBUG
+    # 推荐：开启你项目自身的日志，看到你写的 System.out.println 或 log.info
+    org.example.consultantrag: DEBUG
+    # 可选：如果你想看 Spring 如何注入这些 Tool Bean
+    org.springframework.beans: INFO
